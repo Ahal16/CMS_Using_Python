@@ -1,0 +1,733 @@
+class User:
+    def __init__(self, username, password, role):
+        self.username = username
+        self.password = password
+        self.role = role
+# User data
+users = {
+    'admin': User('admin', 'admin@1', 'Admin'),
+    'receptionist': User('receptionist', 'recep@2', 'Receptionist'),
+    'pharmacist': User('pharmacist', 'pharma@3', 'Pharmacist'),
+    'labtech': User('labtech', 'labtech@4', 'Lab Technician')
+}
+
+def authenticate(username, password):  # Authenticate fn
+    try:
+        if username in users and users[username].password == password:
+            return users[username].role
+    except KeyError:
+        return None
+    return None
+
+from datetime import datetime
+
+def log(username,password):
+    with open("login_attempts.log","a") as file:
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        file.write(f"\n[{current_time}] Invalid attempt:  Username:{username}  password:{password}")
+
+def login():
+    attempts = 3
+    while attempts > 0:
+        try:
+            username = input("Enter Username: ")
+            password = input("Enter Password: ")
+            role = authenticate(username, password)
+            if role:
+                print(f"Login successful! You are logged in as {role}.\nWelcome! {role}")
+                return role
+            else:
+                attempts -= 1
+                if attempts > 0:
+                    print(f"Wrong password. Try again. You have {attempts} attempts left.")
+                    log(username,password)
+                else:
+                    print("Login failed. No attempts left.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    login()
+
+#**************** Admin Actions
+
+staff_directory = {}
+
+def staff_list():
+    if not staff_directory:
+        print("No staff details available.")
+    else:
+        for staff_id, details in staff_directory.items():
+            print(f"ID: {staff_id}, Name: {details['Name']}, DOB: {details['DOB']}, "
+                  f"Phone: {details['Phone Number']}, Address: {details['Address']}, "
+                  f"Date of Joining: {details['Date of Joining']}, Salary: {details['Salary']}")
+import re
+
+def add_new_staff():
+    try:
+        staff_id = input("Enter Staff ID: ")
+        staff_name = input("Enter Staff Name: ")
+        while len(staff_name) < 3:
+            staff_name = input("Name should have at least 3 characters. Enter Staff Name: ").strip()
+
+        dob_pattern = r"^\d{2}[-/.]\d{2}[-/.]\d{4}$"
+        dob = input("Enter Date of Birth (dd-mm-yyyy): ").strip()
+        while not re.match(dob_pattern, dob):
+            dob = input("Invalid date format. Enter Date of Birth (dd-mm-yyyy): ").strip()
+
+        phone_no = input("Enter Phone Number: ").strip()
+        while not (phone_no.isdigit() and len(phone_no) == 10):
+            phone_no = input("Phone number should have exactly 10 digits. Enter Phone Number: ").strip()
+
+        address = input("Enter Address: ").strip()
+        while not address.isalnum():
+            address = input("Address should be alphanumeric. Enter Address: ").strip()
+
+        doj = input("Enter Date of Joining (dd-mm-yyyy): ").strip()
+        while not re.match(dob_pattern, doj):
+            doj = input("Invalid date format. Enter Date of Joining (dd-mm-yyyy): ").strip()
+
+        salary = float(input("Enter Salary: "))
+
+        staff_directory[staff_id] = {
+            'Name': staff_name,
+            'DOB': dob,
+            'Phone Number': phone_no,
+            'Address': address,
+            'Date of Joining': doj,
+            'Salary': salary
+        }
+        print(f"Staff {staff_name} added successfully.")
+    except ValueError:
+        print("Invalid input for salary. Please enter a numeric value.")
+    except Exception as e:
+        print(f"An error occurred while adding staff: {e}")
+
+def search_staff():
+    try:
+        search_by = input("Search by (1) Staff ID or (2) Phone Number: or (3) Exit ")
+        if search_by == '1':
+            staff_id = input("Enter Staff ID: ")
+            if staff_id in staff_directory:
+                details = staff_directory[staff_id]
+                print(f"Found Staff: ID: {staff_id}, Name: {details['Name']}, DOB: {details['DOB']}, "
+                      f"Phone: {details['Phone Number']}, Address: {details['Address']}, "
+                      f"Date of Joining: {details['Date of Joining']}, Salary: {details['Salary']}")
+                edit_or_delete(staff_id)
+            else:
+                print("Invalid Staff ID.")
+        elif search_by == '2':
+            phone_no = input("Enter Phone Number: ")
+            for staff_id, details in staff_directory.items():
+                if details['Phone Number'] == phone_no:
+                    print(f"Found Staff: ID: {staff_id}, Name: {details['Name']}, DOB: {details['DOB']}, "
+                          f"Phone: {details['Phone Number']}, Address: {details['Address']}, "
+                          f"Date of Joining: {details['Date of Joining']}, Salary: {details['Salary']}")
+                    edit_or_delete(staff_id)
+                    return
+            print("Invalid Phone Number.")
+        elif search_by == '3' :
+            print("Exiting...")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred during search: {e}")
+
+def edit_or_delete(staff_id):
+    try:
+        action = input("Would you like to (1) Edit or (2) Delete this staff data? or (3) Exit")
+        if action == '1':
+            edit_staff(staff_id)
+        elif action == '2':
+            confirm = input("Are you sure you want to delete this lab test? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                delete_lab_test(staff_id)
+            else:
+                print("Deletion canceled.")
+        elif action == '3' :
+            print("Exiting..")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def edit_staff(staff_id):
+    try:
+        print("Editing options: ")
+        print("1. Phone Number")
+        print("2. Address")
+        print("3. Salary")
+        choice = input("Enter the number of the field you want to edit: ")
+        if choice == '1':
+            new_phone = input("Enter new Phone Number: ")
+            staff_directory[staff_id]['Phone Number'] = new_phone
+            print("Phone Number updated successfully.")
+        elif choice == '2':
+            new_address = input("Enter new Address: ")
+            staff_directory[staff_id]['Address'] = new_address
+            print("Address updated successfully.")
+        elif choice == '3':
+            new_salary = float(input("Enter new Salary: "))
+            staff_directory[staff_id]['Salary'] = new_salary
+            print("Salary updated successfully.")
+        else:
+            print("Invalid option.")
+    except ValueError:
+        print("Invalid input for salary. Please enter a numeric value.")
+    except Exception as e:
+        print(f"An error occurred while editing staff: {e}")
+
+def delete_staff(staff_id):
+    try:
+        del staff_directory[staff_id]
+        print("Staff deleted successfully.")
+    except KeyError:
+        print("Staff ID not found.")
+    except Exception as e:
+        print(f"An error occurred while deleting staff: {e}")
+
+# Admin actions
+def admin_actions():
+    while True:
+        try:
+            print("\nAdmin Actions:")
+            print("1. List Staff")
+            print("2. Add New Staff")
+            print("3. Search and View Staff Details")
+            print("4. Logout")
+            choice = input("Enter your choice: ")
+            if choice == '1':
+                staff_list()
+            elif choice == '2':
+                add_new_staff()
+            elif choice == '3':
+                search_staff()
+            elif choice == '4':
+                print("Logging out...")
+                login()
+            else:
+                print("Invalid choice. Please try again.")
+        except Exception as e:
+            print(f"An error occurred during admin actions: {e}")
+
+# ************** Receptionist actions
+
+patient_directory = {}
+def patient_list():
+    if not patient_directory:
+        print("No patient details available.")
+    else:
+        for reg_num, details in patient_directory.items():
+            print(f"Reg Num: {reg_num}, Name: {details['Name']}, Address: {details['Address']}, "
+                  f"Phone: {details['Phone Number']}, DOB: {details['DOB']},  "
+                  f"Blood Group: {details['Blood Group']}")
+
+def add_patient():
+    try:
+        reg_num = input("Enter Registration Number: ")
+
+        name = input("Enter Name (minimum 3 characters): ")
+        if len(name) < 3:
+            raise ValueError("Name must be at least 3 characters long.")
+
+        address = input("Enter Address: ").strip()
+        while not address.isalnum():
+            address = input("Address should be alphanumeric. Enter Address: ").strip()
+
+        phone_no = input("Enter Phone Number: ").strip()
+        while not (phone_no.isdigit() and len(phone_no) == 10):
+            phone_no = input("Phone number should have exactly 10 digits. Enter Phone Number: ").strip()
+
+        dob_pattern = r"^\d{2}-\d{2}-\d{4}$"
+        dob = input("Enter Date of Birth (dd-mm-yyyy): ").strip()
+        while not re.match(dob_pattern, dob):
+            dob = input("Invalid date format. Enter Date of Birth (dd-mm-yyyy): ").strip()
+
+        blood_group = input("Enter Blood Group (A+, B+, O+, A-, B-, AB+, AB-, A1B+): ").upper()
+        if blood_group not in ['A+', 'B+', 'O+', 'A-', 'B-', 'AB+', 'AB-', 'A1B+']:
+            raise ValueError("Invalid Blood Group.")
+
+        patient_directory[reg_num] = {
+            'Name': name,
+            'Address': address,
+            'Phone Number': phone_no,
+            'DOB': dob,
+
+            'Blood Group': blood_group
+        }
+        print(f"Patient {name} added successfully.")
+    except ValueError as e:
+        print(e)
+    except Exception as e:
+        print(f"An error occurred while adding patient: {e}")
+
+def search_patient():
+    try:
+        search_by = input("Search by (1) Registration Number or (2) Phone Number: (3) Exit ")
+        if search_by == '1':
+            reg_num = input("Enter Registration Number: ")
+            if reg_num in patient_directory:
+                details = patient_directory[reg_num]
+                print(f"Found Patient: Reg Num: {reg_num}, Name: {details['Name']}, Address: {details['Address']}, "
+                      f"Phone: {details['Phone Number']}, DOB: {details['DOB']}, "
+                      f"Blood Group: {details['Blood Group']}")
+                edit_or_delete_patient(reg_num)
+            else:
+                print("Invalid Registration Number.")
+        elif search_by == '2':
+            phone_no = input("Enter Phone Number: ")
+            matched = False
+            for reg_num, details in patient_directory.items():
+                if details['Phone Number'] == phone_no:
+                    matched = True
+                    print(f"Found Patient: Reg Num: {reg_num}, Name: {details['Name']}, Address: {details['Address']}, "
+                          f"Phone: {details['Phone Number']}, DOB: {details['DOB']}, "
+                          f"Blood Group: {details['Blood Group']}")
+                    name = input("Enter Name to confirm: ")
+                    if name == details['Name']:
+                        edit_or_delete_patient(reg_num)
+                    else:
+                        print("No match found with the given name.")
+                    break
+            if not matched:
+                print("Invalid Phone Number.")
+        elif  search_by == '3' :
+            print("Exiting..")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred during search: {e}")
+
+def edit_or_delete_patient(reg_num):
+    try:
+        action = input("Would you like to (1) Edit or (2) Delete this patient? or (3) Exit ")
+        if action == '1':
+            edit_patient(reg_num)
+        elif action == '2':
+            confirm = input("Are you sure you want to delete this patient? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                delete_patient(reg_num)
+            else:
+                print("Deletion canceled.")
+        elif action == '3':
+            print("Exiting...")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def edit_patient(reg_num):
+    try:
+        print("Editing options: ")
+        print("1. Phone Number")
+        print("2. Address")
+        choice = input("Enter the number of the field you want to edit: ")
+
+        if choice == '1':
+            new_phone = input("Enter new Phone Number: ")
+            patient_directory[reg_num]['Phone Number'] = new_phone
+            print("Phone Number updated successfully.")
+        elif choice == '2':
+            new_address = input("Enter new Address: ")
+            patient_directory[reg_num]['Address'] = new_address
+            print("Address updated successfully.")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred while editing patient: {e}")
+
+def delete_patient(reg_num):
+    try:
+        if reg_num in patient_directory:
+            del patient_directory[reg_num]
+            print("Patient deleted successfully.")
+        else:
+            print("Registration Number not found.")
+    except KeyError:
+        print("Registration Number not found.")
+    except Exception as e:
+        print(f"An error occurred while deleting patient: {e}")
+
+
+# Receptionist actions
+def receptionist_actions():
+    while True:
+        try:
+            print("\nReceptionist Actions:")
+            print("1. List Patients")
+            print("2. Add Patient")
+            print("3. Search Patient Details")
+            print("4. Logout")
+            choice = input("Enter your choice: ")
+
+            if choice == '1':
+                patient_list()
+            elif choice == '2':
+                add_patient()
+            elif choice == '3':
+                search_patient()
+            elif choice == '4':
+                print("Logging out...")
+                login()
+            else:
+                print("Invalid choice. Please try again.")
+        except Exception as e:
+            print(f"An error occurred during receptionist actions: {e}")
+
+
+# **************  Pharmacist actions
+medicine_list = {}
+
+def list_medicines():
+    if not medicine_list:
+        print("No medicines available.")
+    else:
+        for medi_code, details in medicine_list.items():
+            print(f"Code: {medi_code}, Name: {details['Medi_name']}, Generic Name: {details['Generic Name']}, "
+                  f"Company: {details['Company Name']}, Quantity: {details['Quantity']}, Price: {details['Price']}")
+
+def add_new_medicine():
+    try:
+        medi_code = input("Enter Medicine Code (alphanumeric): ")
+        if not re.match(r'^[a-zA-Z0-9]+$', medi_code):
+            print("Invalid Medicine Code. It should be alphanumeric.")
+            return
+
+        medi_name = input("Enter Medicine Name: ")
+        if not re.match(r'^[a-zA-Z0-9 ]+$', medi_name):
+            print("Invalid Medicine Name. It should be alphanumeric.")
+            return
+
+        generic_name = input("Enter Generic Name: ")
+        if not re.match(r'^[a-zA-Z ]+$', generic_name):
+            print("Invalid Generic Name. It should contain only alphabetic characters.")
+            return
+
+        company_name = input("Enter Company Name: ")
+        if not re.match(r'^[a-zA-Z ]+$', company_name):
+            print("Invalid Company Name. It should contain only alphabetic characters.")
+            return
+
+        quantity = input("Enter Quantity: ")
+        if not quantity.isdigit():
+            print("Invalid Quantity. It should be a numeric value.")
+            return
+
+        price = input("Enter Price: ")
+        try:
+            price = float(price)
+        except ValueError:
+            print("Invalid Price. It should be a numeric value.")
+            return
+
+        medicine_list[medi_code] = {
+            'Medi_name': medi_name,
+            'Generic Name': generic_name,
+            'Company Name': company_name,
+            'Quantity': quantity,
+            'Price': price
+        }
+        print(f"Medicine {medi_name} added successfully.")
+    except ValueError:
+        print("Invalid input for quantity or price. Please enter numeric values.")
+    except Exception as e:
+        print(f"An error occurred while adding the medicine: {e}")
+
+def search_medicine():
+    try:
+        search_by = input("Search by (1) Medicine Code or (2) Medicine Name: ").strip()
+        if search_by == '1':
+            medi_code = input("Enter Medicine Code: ").strip()
+            if medi_code in medicine_list:
+                details = medicine_list[medi_code]
+                print(f"Found Medicine: Code: {medi_code}, Name: {details['Medi_name']}, Generic Name: {details['Generic Name']}, "
+                      f"Company: {details['Company Name']}, Quantity: {details['Quantity']}, Price: {details['Price']}")
+                edit_or_delete_medicine(medi_code)
+            else:
+                print("Invalid Medicine Code.")
+        elif search_by == '2':
+            medi_name = input("Enter Medicine Name: ").strip()
+            for medi_code, details in medicine_list.items():
+                if details['Medi_name'].lower() == medi_name.lower():
+                    print(f"Found Medicine: Code: {medi_code}, Name: {details['Medi_name']}, Generic Name: {details['Generic Name']}, "
+                          f"Company: {details['Company Name']}, Quantity: {details['Quantity']}, Price: {details['Price']}")
+                    edit_or_delete_medicine(medi_code)
+                    return
+            print("Invalid Medicine Name.")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred during the search: {e}")
+
+def edit_or_delete_medicine(medi_code):
+    try:
+        action = input("Would you like to (1) Edit or (2) Delete this medicine? or (3) Exit ").strip()
+        if action == '1':
+            edit_medicine(medi_code)
+        elif action == '2':
+            confirm = input("Are you sure you want to delete this medicine? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                delete_medicine(medi_code)
+            else:
+                print("Deletion canceled.")
+        elif action == '3':
+            print("Exiting....")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def edit_medicine(medi_code):
+    try:
+        print("Editing options: ")
+        print("1. Quantity")
+        print("2. Price")
+        choice = input("Enter the number of the field you want to edit: ")
+
+        if choice == '1':
+            new_quantity = int(input("Enter new Quantity: "))
+            medicine_list[medi_code]['Quantity'] = new_quantity
+            print("Quantity updated successfully.")
+        elif choice == '2':
+            new_price = float(input("Enter new Price: "))
+            medicine_list[medi_code]['Price'] = new_price
+            print("Price updated successfully.")
+        else:
+            print("Invalid option.")
+    except ValueError:
+        print("Invalid input for quantity or price. Please enter numeric values.")
+    except Exception as e:
+        print(f"An error occurred while editing the medicine: {e}")
+
+def delete_medicine(medi_code):
+    try:
+        if medi_code in medicine_list:
+            del medicine_list[medi_code]
+            print("Medicine deleted successfully.")
+        else:
+            print("Medicine Code not found.")
+    except KeyError:
+        print("Medicine Code not found.")
+    except Exception as e:
+        print(f"An error occurred while deleting the medicine: {e}")
+
+# Pharmacist actions
+def pharmacist_actions():
+    while True:
+        try:
+            print("\nPharmacist Actions:")
+            print("1. List Medicines")
+            print("2. Add New Medicine")
+            print("3. Search and View Medicine Details")
+            print("4. Logout")
+            choice = input("Enter your choice: ")
+
+            if choice == '1':
+                list_medicines()
+            elif choice == '2':
+                add_new_medicine()
+            elif choice == '3':
+                search_medicine()
+            elif choice == '4':
+                print("Logging out...")
+                login()
+            else:
+                print("Invalid choice. Please try again.")
+        except Exception as e:
+            print(f"An error occurred during pharmacist actions: {e}")
+
+# **********  Lab Technician actions
+
+# Static list of Lab Tests
+lab_tests = {
+    'T001': {
+        'Test Name': 'Blood Sugar',
+        'Low Range': 70,
+        'High Range': 110,
+        'Unit': 'mg/dL',
+        'Price': 150.00
+    },
+    'T002': {
+        'Test Name': 'Cholesterol',
+        'Low Range': 150,
+        'High Range': 200,
+        'Unit': 'mg/dL',
+        'Price': 200.00
+    }
+}
+
+def list_lab_tests():
+    if not lab_tests:
+        print("No lab tests available.")
+    else:
+        for test_code, details in lab_tests.items():
+            print(f"Code: {test_code}, Name: {details['Test Name']}, "
+                  f"Low Range: {details['Low Range']}, High Range: {details['High Range']}, "
+                  f"Unit: {details['Unit']}, Price: {details['Price']}")
+
+def add_new_lab_test():
+    try:
+        test_code = input("Enter Test Code: ")
+        if not re.match(r'^[a-zA-Z0-9]+$', test_code):
+            print("Invalid Test Code. It should be alphanumeric.")
+            return
+
+        test_name = input("Enter Test Name: ")
+        if not re.match(r'^[a-zA-Z ]+$', test_name):
+            print("Invalid Test Name. It should contain only alphabetic characters.")
+            return
+
+        low_range = float(input("Enter Low Range: "))
+        high_range = float(input("Enter High Range: "))
+        if low_range >= high_range:
+            raise ValueError("Low Range must be less than High Range.")
+
+        unit = input("Enter Unit (should be 'mg/dl'): ")
+        pattern = r'^\d+(\.\d+)?\s*mg/dl$'
+
+        if not re.match(pattern, unit.lower()):
+            print("Invalid Unit. It should be in the format 'X mg/dl' where X is a number.")
+        else:
+            print("Valid Unit.")
+
+        price = float(input("Enter Price: "))
+
+        lab_tests[test_code] = {
+            'Test Name': test_name,
+            'Low Range': low_range,
+            'High Range': high_range,
+            'Unit': unit,
+            'Price': price
+        }
+        print(f"Lab Test '{test_name}' added successfully.")
+    except Exception as e:
+        print(f"An error occurred while adding the lab test: {e}")
+
+def search_lab_test():
+    try:
+        search_by = input("Search by (1) Test Code or (2) Test Name: ")
+        if search_by == '1':
+            test_code = input("Enter Test Code: ")
+            if test_code in lab_tests:
+                details = lab_tests[test_code]
+                print(f"Found Lab Test: Code: {test_code}, Name: {details['Test Name']}, "
+                      f"Low Range: {details['Low Range']}, High Range: {details['High Range']}, "
+                      f"Unit: {details['Unit']}, Price: {details['Price']}")
+                edit_or_delete_lab_test(test_code)
+            else:
+                print("Invalid Test Code.")
+        elif search_by == '2':
+            test_name = input("Enter Test Name: ")
+            for test_code, details in lab_tests.items():
+                if details['Test Name'].lower() == test_name.lower():
+                    print(f"Found Lab Test: Code: {test_code}, Name: {details['Test Name']}, "
+                          f"Low Range: {details['Low Range']}, High Range: {details['High Range']}, "
+                          f"Unit: {details['Unit']}, Price: {details['Price']}")
+                    edit_or_delete_lab_test(test_code)
+                    return
+            print("Invalid Test Name.")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred during search: {e}")
+
+def edit_or_delete_lab_test(test_code):
+    try:
+        action = input("Would you like to (1) Edit or (2) Delete this lab test? or (3) Exit ")
+        if action == '1':
+            edit_lab_test(test_code)
+        elif action == '2':
+            confirm = input("Are you sure you want to delete this lab test? (yes/no): ").strip().lower()
+            if confirm == 'yes':
+                delete_lab_test(test_code)
+            else:
+                print("Deletion canceled.")
+        elif action =='3':
+            print("Exiting...")
+        else:
+            print("Invalid option.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def edit_lab_test(test_code):
+    try:
+        print("Editing options: ")
+        print("1. Price")
+        choice = input("Enter the number of the field you want to edit: ")
+
+        if choice == '1':
+            new_price = float(input("Enter new Price: "))
+            lab_tests[test_code]['Price'] = new_price
+            print("Price updated successfully.")
+        else:
+            print("Invalid option.")
+    except ValueError:
+        print("Invalid input for price. Please enter a numeric value.")
+    except Exception as e:
+        print(f"An error occurred while editing the lab test: {e}")
+
+def delete_lab_test(test_code):
+    try:
+        if test_code in lab_tests:
+            del lab_tests[test_code]
+            print("Lab Test deleted successfully.")
+        else:
+            print("Lab Test Code not found.")
+    except KeyError:
+        print("Lab Test Code not found.")
+    except Exception as e:
+        print(f"An error occurred while deleting the lab test: {e}")
+
+# Lab Technician actions
+def lab_technician_actions():
+    while True:
+        try:
+            print("\nLab Technician Actions:")
+            print("1. List Lab Tests")
+            print("2. Add New Lab Test")
+            print("3. Search and View Lab Test Details")
+            print("4. Logout")
+            choice = input("Enter your choice: ")
+
+            if choice == '1':
+                list_lab_tests()
+            elif choice == '2':
+                add_new_lab_test()
+            elif choice == '3':
+                search_lab_test()
+            elif choice == '4':
+                print("Logging out...")
+                login()
+            else:
+                print("Invalid choice. Please try again.")
+        except Exception as e:
+            print(f"An error occurred during lab technician actions: {e}")
+
+# Main function
+def main():
+    try:
+        role = login()
+        if role == "Admin":
+            admin_actions()
+        elif role == "Receptionist":
+            receptionist_actions()
+        elif role == "Pharmacist":
+            pharmacist_actions()
+        elif role == "Lab Technician":
+            lab_technician_actions()
+        else:
+            print("Exiting the system.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
+
